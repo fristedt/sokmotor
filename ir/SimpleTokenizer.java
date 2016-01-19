@@ -207,7 +207,7 @@ public class SimpleTokenizer {
      */
     private void refillBuffer( int start ) throws IOException {
 	int chars_read = reader.read( buf, start, BUFFER_LENGTH-start );
-	if ( chars_read < BUFFER_LENGTH-start ) {
+	if ( chars_read < BUFFER_LENGTH-start && chars_read >= 0) {
 	    buf[chars_read] = 0;
 	}
     }
