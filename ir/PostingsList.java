@@ -41,31 +41,7 @@ public class PostingsList implements Serializable {
 
     public void add(int docID) {
 	docIDs.add(docID);
-
-	if (size() < 1) {
-	    list.add(new PostingsEntry(docID));
-	    return;
-	}
-
-	if (docID < list.getFirst().docID) {
-	    list.addFirst(new PostingsEntry(docID));
-	    return;
-	}
-
-	if (docID > list.getLast().docID) {
-	    list.addLast(new PostingsEntry(docID));
-	    return;
-	}
-
-	ListIterator<PostingsEntry> iterator = list.listIterator();
-	while (iterator.hasNext()) {
-	    PostingsEntry current = iterator.next();
-	    if (docID > current.docID) {
-		continue;
-	    }
-	    iterator.add(new PostingsEntry(docID));
-	    return;
-	}
+	list.add(new PostingsEntry(docID));
     }
 
     public boolean contains(int docID) {
