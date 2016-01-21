@@ -82,16 +82,12 @@ public class HashedIndex implements Index {
 	sortByIncreasingFrequency(terms);
 
 	PostingsList result = getPostings(terms.getFirst());
-	System.out.println("ZOMBIE");
-	result.getIDs().forEach(i -> printFileAndID(i));
 	if (result == null)
 	    return null;
 
 	terms.remove();
 
 	while (terms.size() > 0 && result != null) {
-	    System.out.println("ZOMBIE");
-	    getPostings(terms.getFirst()).getIDs().forEach(i -> printFileAndID(i));
 	    result = intersect(result, getPostings(terms.getFirst()));
 	    terms.remove();
 	}
@@ -104,7 +100,6 @@ public class HashedIndex implements Index {
 	PostingsList answer = new PostingsList();
 
 	for (int i = 0, j = 0; i < l1.size() && j < l2.size();) {
-	    // TODO: Onödigt att getta varje gång, fixa iterator???
 	    PostingsEntry p1 = l1.get(i);
 	    PostingsEntry p2 = l2.get(j);
 
