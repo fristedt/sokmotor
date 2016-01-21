@@ -9,6 +9,7 @@
 package ir;
 
 import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.ListIterator;
 import java.util.List;
 import java.util.HashSet;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 public class PostingsList implements Serializable {
     
     /** The postings list as a linked list. */
-    private LinkedList<PostingsEntry> list = new LinkedList<PostingsEntry>();
+    private ArrayList<PostingsEntry> list = new ArrayList<PostingsEntry>();
     private HashSet<Integer> docIDs = new HashSet<Integer>();
 
 
@@ -36,12 +37,21 @@ public class PostingsList implements Serializable {
     }
 
     public PostingsEntry getFirst() {
-	return get(0);
+	return list.get(0);
+    }
+
+    public PostingsEntry getLast() {
+	return list.get(list.size() - 1);
     }
 
     public void add(int docID) {
 	docIDs.add(docID);
 	list.add(new PostingsEntry(docID));
+    }
+
+    public void add(PostingsEntry pe) {
+	docIDs.add(pe.docID);
+	list.add(pe);
     }
 
     public boolean contains(int docID) {

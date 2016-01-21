@@ -9,11 +9,14 @@
 package ir;
 
 import java.io.Serializable;
+import java.util.LinkedList;
+import java.util.ArrayList;
 
 public class PostingsEntry implements Comparable<PostingsEntry>, Serializable {
     
     public int docID;
     public double score;
+    public ArrayList<Integer> positions = new ArrayList<Integer>();
 
     public PostingsEntry(int docID) {
 	this.docID = docID;

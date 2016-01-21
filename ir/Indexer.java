@@ -68,7 +68,11 @@ public class Indexer {
      *  Tokenizes and indexes the file @code{f}. If @code{f} is a directory,
      *  all its files and subdirectories are recursively processed.
      */
+    private int i = 0;
     public void processFiles( File f ) {
+	if (i % 50 == 0)
+	    System.out.println("#file: " + i);
+	i++;
 	// do not try to index fs that cannot be read
 	if ( f.canRead() ) {
 	    if ( f.isDirectory() ) {
@@ -80,7 +84,7 @@ public class Indexer {
 		    }
 		}
 	    } else {
-		//System.err.println( "Indexing " + f.getPath() );
+		// System.err.println( "Indexing " + f.getPath() );
 		// First register the document and get a docID
 		int docID = generateDocID();
 		index.docIDs.put( "" + docID, f.getPath() );
