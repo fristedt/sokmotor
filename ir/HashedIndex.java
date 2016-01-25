@@ -31,7 +31,6 @@ public class HashedIndex implements Index {
      *  Inserts this token in the index.
      */
     public void insert( String token, int docID, int offset ) {
-	// System.out.println("inserting token: " + token);
 	if ("".equals(token)) {
 	    System.err.println("Empty token provided.");
 	    return;

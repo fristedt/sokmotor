@@ -188,11 +188,13 @@ public class SearchGUI extends JFrame {
 			    else {
 				buf.append( filename );
 			    }
+			    System.out.println(filename);
 			    if ( queryType == Index.RANKED_QUERY ) {
 				buf.append( "   " + String.format( "%.5f", results.get(i).score )); 
 			    }
 			    buf.append( "\n" );
 			}
+			System.out.println("");
 		    }
 		    else {
 			buf.append( "\nFound 0 matching document(s)\n\n" );
