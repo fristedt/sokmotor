@@ -96,6 +96,8 @@ public class SearchGUI extends JFrame {
     JCheckBox[] feedbackButton = new JCheckBox[10];
     JToggleButton feedbackExecutor = new JToggleButton("New search"); 
 
+    JProgressBar progressBar = new JProgressBar(0, 17482);
+
 
     /* ----------------------------------------------- */
 
@@ -149,6 +151,11 @@ public class SearchGUI extends JFrame {
 	p3.setLayout(new BoxLayout(p3, BoxLayout.X_AXIS));
 	p3.add( new JLabel( new ImageIcon( BLANKPIC )));
 	p3.add( queryWindow );
+
+	progressBar.setValue(0);
+	progressBar.setStringPainted(true);
+	p3.add( progressBar );
+
 	queryWindow.setFont( queryFont );
 	p3.add( new JLabel( new ImageIcon( BLANKPIC )));
 	p.add( p3 );
@@ -347,7 +354,7 @@ public class SearchGUI extends JFrame {
 	    resultWindow.setText( "\n  Indexing, please wait..." );
 	    for ( int i=0; i<dirNames.size(); i++ ) {
 		File dokDir = new File( dirNames.get( i ));
-		indexer.processFiles( dokDir );
+		indexer.processFiles( dokDir, progressBar );
 	    }
 	    resultWindow.setText( "\n  Done!" );
 	}

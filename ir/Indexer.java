@@ -22,6 +22,7 @@ import org.apache.pdfbox.cos.COSDocument;
 import org.apache.pdfbox.pdfparser.*;
 import org.apache.pdfbox.util.PDFTextStripper;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import javax.swing.JProgressBar;
 
 
 /**
@@ -68,11 +69,11 @@ public class Indexer {
      *  Tokenizes and indexes the file @code{f}. If @code{f} is a directory,
      *  all its files and subdirectories are recursively processed.
      */
-    // private int i = 0;
-    public void processFiles( File f ) {
-	// if (i % 50 == 0)
-	//     System.out.println("#file: " + i);
-	// i++;
+    private int i = 0;
+    public void processFiles( File f, JProgressBar progressBar ) {
+	if (i % 50 == 0)
+	    System.out.println("#file: " + i);
+	i++;
 	// do not try to index fs that cannot be read
 	if ( f.canRead() ) {
 	    if ( f.isDirectory() ) {
@@ -80,7 +81,8 @@ public class Indexer {
 		// an IO error could occur
 		if ( fs != null ) {
 		    for ( int i=0; i<fs.length; i++ ) {
-			processFiles( new File( f, fs[i] ));
+			progressBar.setValue(i);
+			processFiles( new File( f, fs[i] ), null);
 		    }
 		}
 	    } else {
