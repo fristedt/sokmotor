@@ -84,6 +84,8 @@ public class Indexer {
 			progressBar.setValue(i);
 			processFiles( new File( f, fs[i] ), null);
 		    }
+		    ((HashedIndex)index).writeBlockToDisk();
+		    ((HashedIndex)index).loadDocIDs();
 		}
 	    } else {
 		// System.err.println( "Indexing " + f.getPath() );

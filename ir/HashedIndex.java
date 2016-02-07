@@ -11,6 +11,7 @@
 package ir;
 
 import java.util.Map;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.LinkedList;
@@ -28,12 +29,17 @@ import java.io.ObjectOutputStream;
  *   Implements an inverted index as a Hashtable from words to PostingsLists.
  */
 public class HashedIndex implements Index {
+    private String indexPath = "/var/tmp/hampus_index/";
     private int i = 0;
-    private int BLOCK_SIZE = 1000;
+    private int BLOCK_SIZE = 5000;
     private int lastDocID = -1;
 
     /** The index as a hashtable. */
     private HashMap<String,PostingsList> index = new HashMap<String,PostingsList>();
+
+    public HashedIndex() {
+	loadDocIDs();
+    }
 
 
     /**
@@ -42,12 +48,10 @@ public class HashedIndex implements Index {
     public void insert( String token, int docID, int offset ) {
 	if (docID != lastDocID) {
 	    lastDocID = docID;
-	    // System.out.println("Next file...");
 	    i += 1;
 	}
 
 	if (i >= BLOCK_SIZE) {
-	    System.out.println("Writing to disk");
 	    writeBlockToDisk();
 	    i = 0;
 	}
@@ -80,7 +84,13 @@ public class HashedIndex implements Index {
      *  Returns all the words in the index.
      */
     public Iterator<String> getDictionary() {
-	return index.keySet().iterator();
+	File folder = new File(indexPath);
+	File[] listOfFiles = folder.listFiles();
+	ArrayList<String> words = new ArrayList<String>();
+	for (int i = 0; i < listOfFiles.length; ++i) {
+	    words.add(listOfFiles[i].getName());
+	}
+	return words.iterator();
     }
 
 
@@ -89,7 +99,15 @@ public class HashedIndex implements Index {
      *  if the term is not in the index.
      */
     public PostingsList getPostings( String token ) {
-	return index.get(token);
+	File file = new File(indexPath + token);
+	if (!file.exists())
+	    return null;
+	try {
+	    return (PostingsList) new ObjectInputStream(new FileInputStream(file)).readObject();
+	} catch (Exception e) {
+	    e.printStackTrace();
+	}
+	return null;
     }
 
 
@@ -101,7 +119,8 @@ public class HashedIndex implements Index {
 	    return null;
 
 	if (query.terms.size() == 1)
-	    return index.get(query.terms.get(0));
+	    return getPostings(query.terms.get(0));
+
 
 	return intersect(query.terms, queryType);
     }
@@ -153,7 +172,7 @@ public class HashedIndex implements Index {
     }
 
     private void sortByIncreasingFrequency(LinkedList<String> terms) {
-	terms.sort(new Comparator<String>() {
+	Collections.sort(terms, new Comparator<String>() {
 	    public int compare(String t1, String t2) {
 		PostingsList t1Postings = getPostings(t1);
 		PostingsList t2Postings = getPostings(t2);
@@ -216,10 +235,29 @@ public class HashedIndex implements Index {
 	System.out.printf("ID: %d | %s\n",  docID, docIDs.get("" + docID));
     }
 
-    private void writeBlockToDisk() {
+    public void writeBlockToDisk() {
+	System.out.println("Writing to disk");
 	try {
+	    {
+		File file = new File(indexPath + "docIDs");
+		if (file.exists()) {
+		    FileInputStream fis = new FileInputStream(file);
+		    ObjectInputStream ois = new ObjectInputStream(fis);
+		    HashMap<String, String> oldIDs = (HashMap<String, String>) ois.readObject();
+		    oldIDs.putAll(docIDs);
+		    docIDs.clear();
+		    docIDs.putAll(oldIDs);
+		}
+		FileOutputStream fos = new FileOutputStream(file);
+		ObjectOutputStream oos = new ObjectOutputStream(fos);
+		oos.writeObject(docIDs);
+		oos.close();
+		fos.close();
+		docIDs.clear();
+	    }
+
 	    for (Map.Entry<String, PostingsList> e : index.entrySet()) {
-		File file = new File("index/" + e.getKey());
+		File file = new File(indexPath + e.getKey());
 
 		// If file doesn't exist, just create it and add postings list.
 		if (!file.exists()) {
@@ -237,7 +275,10 @@ public class HashedIndex implements Index {
 		ois.close();
 		fis.close();
 
-		pl.list.addAll(e.getValue().list);
+		PostingsList newList = e.getValue();
+		for (int i = 0; i < newList.size(); ++i) {
+		  pl.add(newList.get(0));
+		}
 
 		FileOutputStream fos = new FileOutputStream(file);
 		ObjectOutputStream oos = new ObjectOutputStream(fos);
@@ -249,5 +290,21 @@ public class HashedIndex implements Index {
 	    e.printStackTrace();
 	}
 	index.clear();
+    }
+
+    public void loadDocIDs() {
+	try {
+	    File file = new File(indexPath + "docIDs");
+	    if (file.exists()) {
+		FileInputStream fis = new FileInputStream(file);
+		ObjectInputStream ois = new ObjectInputStream(fis);
+		HashMap<String, String> oldIDs = (HashMap<String, String>) ois.readObject();
+		docIDs.putAll(oldIDs);
+		ois.close();
+		fis.close();
+	    }
+	} catch (Exception e) {
+	    e.printStackTrace();
+	}
     }
 }

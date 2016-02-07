@@ -14,7 +14,6 @@ import java.util.ListIterator;
 import java.util.List;
 import java.util.HashSet;
 import java.io.Serializable;
-import java.util.stream.Collectors;
 
 /**
  *   A list of postings for a given word.
@@ -22,7 +21,7 @@ import java.util.stream.Collectors;
 public class PostingsList implements Serializable {
     
     /** The postings list as a linked list. */
-    public ArrayList<PostingsEntry> list = new ArrayList<PostingsEntry>();
+    private ArrayList<PostingsEntry> list = new ArrayList<PostingsEntry>();
 
     /**  Number of postings in this list  */
     public int size() {
@@ -67,7 +66,11 @@ public class PostingsList implements Serializable {
     }
 
     public List<Integer> getIDs() {
-	return list.stream().map(e -> e.docID).collect(Collectors.toList());
+	List<Integer> result = new ArrayList<Integer>();
+	for (PostingsEntry pe : list) {
+	    result.add(pe.docID);
+	}
+	return result;
     }
 }
 	
