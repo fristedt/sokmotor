@@ -22,9 +22,7 @@ import java.util.stream.Collectors;
 public class PostingsList implements Serializable {
     
     /** The postings list as a linked list. */
-    private ArrayList<PostingsEntry> list = new ArrayList<PostingsEntry>();
-    private HashSet<Integer> docIDs = new HashSet<Integer>();
-
+    public ArrayList<PostingsEntry> list = new ArrayList<PostingsEntry>();
 
     /**  Number of postings in this list  */
     public int size() {
@@ -45,17 +43,19 @@ public class PostingsList implements Serializable {
     }
 
     public void add(int docID) {
-	docIDs.add(docID);
 	list.add(new PostingsEntry(docID));
     }
 
     public void add(PostingsEntry pe) {
-	docIDs.add(pe.docID);
 	list.add(pe);
     }
 
     public boolean contains(int docID) {
-	return docIDs.contains(docID);
+	for (PostingsEntry pe : list) {
+	    if (pe.docID == docID)
+		return true;
+	}
+	return false;
     }
 
     public void printIDs() {
