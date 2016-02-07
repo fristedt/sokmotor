@@ -10,18 +10,27 @@
 
 package ir;
 
+import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Comparator;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 
 
 /**
  *   Implements an inverted index as a Hashtable from words to PostingsLists.
  */
 public class HashedIndex implements Index {
+    private int i = 0;
+    private int BLOCK_SIZE = 1000;
+    private int lastDocID = -1;
 
     /** The index as a hashtable. */
     private HashMap<String,PostingsList> index = new HashMap<String,PostingsList>();
@@ -31,6 +40,18 @@ public class HashedIndex implements Index {
      *  Inserts this token in the index.
      */
     public void insert( String token, int docID, int offset ) {
+	if (docID != lastDocID) {
+	    lastDocID = docID;
+	    // System.out.println("Next file...");
+	    i += 1;
+	}
+
+	if (i >= BLOCK_SIZE) {
+	    System.out.println("Writing to disk");
+	    writeBlockToDisk();
+	    i = 0;
+	}
+
 	if ("".equals(token)) {
 	    System.err.println("Empty token provided.");
 	    return;
@@ -193,5 +214,40 @@ public class HashedIndex implements Index {
 
     private void printFileAndID(int docID) {
 	System.out.printf("ID: %d | %s\n",  docID, docIDs.get("" + docID));
+    }
+
+    private void writeBlockToDisk() {
+	try {
+	    for (Map.Entry<String, PostingsList> e : index.entrySet()) {
+		File file = new File("index/" + e.getKey());
+
+		// If file doesn't exist, just create it and add postings list.
+		if (!file.exists()) {
+		    FileOutputStream fos = new FileOutputStream(file);
+		    ObjectOutputStream oos = new ObjectOutputStream(fos);
+		    oos.writeObject(e.getValue());
+		    oos.close();
+		    fos.close();
+		    continue;
+		}
+
+		FileInputStream fis = new FileInputStream(file);
+		ObjectInputStream ois = new ObjectInputStream(fis);
+		PostingsList pl = (PostingsList) ois.readObject();
+		ois.close();
+		fis.close();
+
+		pl.list.addAll(e.getValue().list);
+
+		FileOutputStream fos = new FileOutputStream(file);
+		ObjectOutputStream oos = new ObjectOutputStream(fos);
+		oos.writeObject(pl);
+		oos.close();
+		fos.close();
+	    }
+	} catch (Exception e) {
+	    e.printStackTrace();
+	}
+	index.clear();
     }
 }

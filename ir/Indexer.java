@@ -80,6 +80,7 @@ public class Indexer {
 		// an IO error could occur
 		if ( fs != null ) {
 		    for ( int i=0; i<fs.length; i++ ) {
+			System.out.println("i: " + i);
 			processFiles( new File( f, fs[i] ));
 		    }
 		}
