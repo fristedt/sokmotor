@@ -57,6 +57,8 @@ public class SearchGUI extends JFrame {
     // public static final String homeDir = "/users/hampus/code/sokmotor";
     public static final String homeDir = "/info/DD2476/ir16/lab";
 
+    private static boolean index = false;
+
 
     /*
      *   The nice logotype
@@ -371,7 +373,10 @@ public class SearchGUI extends JFrame {
     private void decodeArgs( String[] args ) {
 	int i=0, j=0;
 	while ( i < args.length ) {
-	    if ( "-d".equals( args[i] )) {
+	    if ("-i".equals(args[i])) {
+		i++;
+		index = true;
+	    } else if ( "-d".equals( args[i] )) {
 		i++;
 		if ( i < args.length ) {
 		    dirNames.add( args[i++] );
@@ -392,7 +397,8 @@ public class SearchGUI extends JFrame {
 	SearchGUI s = new SearchGUI();
 	s.createGUI();
 	s.decodeArgs( args );
-	s.index();
+	if (index)
+	    s.index();
     }
 
 }

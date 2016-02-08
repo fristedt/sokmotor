@@ -238,25 +238,27 @@ public class HashedIndex implements Index {
     public void writeBlockToDisk() {
 	System.out.println("Writing to disk");
 	try {
-	    {
-		File file = new File(indexPath + "docIDs");
-		if (file.exists()) {
-		    FileInputStream fis = new FileInputStream(file);
-		    ObjectInputStream ois = new ObjectInputStream(fis);
-		    HashMap<String, String> oldIDs = (HashMap<String, String>) ois.readObject();
-		    oldIDs.putAll(docIDs);
-		    docIDs.clear();
-		    docIDs.putAll(oldIDs);
-		}
-		FileOutputStream fos = new FileOutputStream(file);
-		ObjectOutputStream oos = new ObjectOutputStream(fos);
-		oos.writeObject(docIDs);
-		oos.close();
-		fos.close();
+	    File file = new File(indexPath + "docIDs");
+	    if (file.exists()) {
+		FileInputStream fis = new FileInputStream(file);
+		ObjectInputStream ois = new ObjectInputStream(fis);
+		HashMap<String, String> oldIDs = (HashMap<String, String>) ois.readObject();
+		oldIDs.putAll(docIDs);
 		docIDs.clear();
+		docIDs.putAll(oldIDs);
 	    }
+	    FileOutputStream fos = new FileOutputStream(file);
+	    ObjectOutputStream oos = new ObjectOutputStream(fos);
+	    oos.writeObject(docIDs);
+	    oos.close();
+	    fos.close();
+	    docIDs.clear();
+	} catch (Exception e) {
+	    e.printStackTrace();
+	}
 
-	    for (Map.Entry<String, PostingsList> e : index.entrySet()) {
+	for (Map.Entry<String, PostingsList> e : index.entrySet()) {
+	    try {
 		File file = new File(indexPath + e.getKey());
 
 		// If file doesn't exist, just create it and add postings list.
@@ -271,25 +273,26 @@ public class HashedIndex implements Index {
 
 		FileInputStream fis = new FileInputStream(file);
 		ObjectInputStream ois = new ObjectInputStream(fis);
-		PostingsList pl = (PostingsList) ois.readObject();
+		PostingsList oldList1 = (PostingsList) ois.readObject();
 		ois.close();
 		fis.close();
 
-		PostingsList newList = e.getValue();
-		for (int i = 0; i < newList.size(); ++i) {
-		  pl.add(newList.get(0));
-		}
+		PostingsList oldList2 = e.getValue();
+
+		PostingsList pl = new PostingsList();
+		pl.addAll(oldList1);
+		pl.addAll(oldList2);
 
 		FileOutputStream fos = new FileOutputStream(file);
 		ObjectOutputStream oos = new ObjectOutputStream(fos);
 		oos.writeObject(pl);
 		oos.close();
 		fos.close();
+	    } catch (Exception exception) {
+		exception.printStackTrace();
 	    }
-	} catch (Exception e) {
-	    e.printStackTrace();
 	}
-	index.clear();
+	index = new HashMap<String,PostingsList>();
     }
 
     public void loadDocIDs() {

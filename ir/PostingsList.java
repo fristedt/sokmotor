@@ -72,6 +72,10 @@ public class PostingsList implements Serializable {
 	}
 	return result;
     }
+
+    public void addAll(PostingsList other) {
+	list.addAll(other.list);
+    }
 }
 	
 
