@@ -45,6 +45,17 @@ public class PostingsList implements Serializable {
 	list.add(new PostingsEntry(docID));
     }
 
+    public void add(int docID, int offset) {
+	if (!contains(docID)) {
+	    PostingsEntry pe = new PostingsEntry(docID);
+	    pe.positions.add(offset);
+	    list.add(pe);
+	} else {
+	    PostingsEntry pe = list.get(list.size()-1);
+	    pe.positions.add(offset);
+	}
+    }
+
     public void add(PostingsEntry pe) {
 	list.add(pe);
     }

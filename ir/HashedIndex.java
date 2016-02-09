@@ -138,12 +138,14 @@ public class HashedIndex implements Index {
 	terms.remove();
 
 	while (terms.size() > 0 && result != null) {
-	    if (queryType == Index.PHRASE_QUERY)
-		result = positionalIntersect(result, getPostings(terms.getFirst()));
-	    else
+	    if (queryType == Index.PHRASE_QUERY) {
+		result = positionalIntersect(result, getPostings(terms.getFirst()), 1);
+	    } else {
 		result = intersect(result, getPostings(terms.getFirst()));
+	    }
 	    terms.remove();
 	}
+	// }
 	return result;
     }
 
@@ -190,7 +192,7 @@ public class HashedIndex implements Index {
 	});
     }
 
-    private PostingsList positionalIntersect(PostingsList l1, PostingsList l2) {
+    private PostingsList positionalIntersect(PostingsList l1, PostingsList l2, int k) {
 	if (l1 == null || l2 == null) 
 	    return null;
 	PostingsList answer = new PostingsList();
@@ -202,17 +204,25 @@ public class HashedIndex implements Index {
 	    if (p1.docID == p2.docID) {
 		List<Integer> ppl1 = p1.positions;
 		List<Integer> ppl2 = p2.positions;
+		List<Integer> l = new ArrayList<Integer>();
+		
 		int currentPosition1, currentPosition2;
 		currentPosition1 = currentPosition2 = 0;
 		for (int x = 0; x < ppl1.size(); ++x) {
 		    for (int y = 0; y < ppl2.size(); ++y) {
 			currentPosition1 = ppl1.get(x);
 			currentPosition2 = ppl2.get(y);
-			if (currentPosition2 - currentPosition1 == 1) {
-			    if (!answer.contains(p1.docID))
-				answer.add(p1.docID);
+			if (currentPosition2 - currentPosition1 == k) {
+			    l.add(currentPosition2);
+			    // if (!answer.contains(p1.docID))
+				// answer.add(p1.docID);
 			} else if (currentPosition2 > currentPosition1) {
 			    break;
+			}
+			while (!l.isEmpty() && Math.abs(l.get(0) - currentPosition1) > k)
+			    l.remove(0);
+			for (int ps : l)  {
+			    answer.add(p1.docID, ps);
 			}
 		    }
 		}
