@@ -51,7 +51,13 @@ public class PostingsList implements Serializable {
         if (!contains(pe.docID)) {
             docIDs.add(pe.docID);
             list.add(pe);
-        }
+        } else {
+	    // Just add the score.
+	    for (int i = 0; i < size(); ++i) {
+		if (get(i).docID == pe.docID)
+		    get(i).score += pe.score;
+	    }
+	}
     }
 
     public void sort() {
