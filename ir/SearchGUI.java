@@ -397,8 +397,7 @@ public class SearchGUI extends JFrame {
 	SearchGUI s = new SearchGUI();
 	s.createGUI();
 	s.decodeArgs( args );
-	if (index)
-	    s.index();
+	s.index();
     }
 
 }

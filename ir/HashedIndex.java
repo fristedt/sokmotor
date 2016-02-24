@@ -10,73 +10,40 @@
 
 package ir;
 
-import java.util.Map;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.ListIterator;
 import java.util.Comparator;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.util.Collections;
 
 
 /**
  *   Implements an inverted index as a Hashtable from words to PostingsLists.
  */
 public class HashedIndex implements Index {
-    private String indexPath = "/var/tmp/hampus_index/";
-    private int i = 0;
-    private int BLOCK_SIZE = 5000;
-    private int lastDocID = -1;
 
     /** The index as a hashtable. */
     private HashMap<String,PostingsList> index = new HashMap<String,PostingsList>();
-
-    public HashedIndex() {
-	loadDocIDs();
-    }
-
+    private final int N = 17486;
 
     /**
      *  Inserts this token in the index.
      */
     public void insert( String token, int docID, int offset ) {
-	if (docID != lastDocID) {
-	    lastDocID = docID;
-	    i += 1;
-	}
+        if (!("".equals(token))) {
+            PostingsList pl = index.get(token);
 
-	if (i >= BLOCK_SIZE) {
-	    writeBlockToDisk();
-	    i = 0;
-	}
+            if (pl == null) {
+                pl = new PostingsList();
+            }
+            pl.add(docID, offset);
+            index.put(token, pl);
 
-	if ("".equals(token)) {
-	    System.err.println("Empty token provided.");
-	    return;
-	}
-
-	PostingsList pl = index.get(token);
-	if (pl == null) {
-	    pl = new PostingsList();
-	    index.put(token, pl);
-	}
-
-	if (pl.contains(docID)) {
-	    // Just get the last added entry and append position.
-	    PostingsEntry pe = pl.getLast();
-	    pe.positions.add(offset);
-	    return;
-	}
-
-	PostingsEntry pe = new PostingsEntry(docID);
-	pe.positions.add(offset);
-	pl.add(pe);
+        } else
+            System.out.println("Empty token");
     }
 
 
@@ -84,13 +51,7 @@ public class HashedIndex implements Index {
      *  Returns all the words in the index.
      */
     public Iterator<String> getDictionary() {
-	File folder = new File(indexPath);
-	File[] listOfFiles = folder.listFiles();
-	ArrayList<String> words = new ArrayList<String>();
-	for (int i = 0; i < listOfFiles.length; ++i) {
-	    words.add(listOfFiles[i].getName());
-	}
-	return words.iterator();
+        return index.keySet().iterator();
     }
 
 
@@ -99,15 +60,7 @@ public class HashedIndex implements Index {
      *  if the term is not in the index.
      */
     public PostingsList getPostings( String token ) {
-	File file = new File(indexPath + token);
-	if (!file.exists())
-	    return null;
-	try {
-	    return (PostingsList) new ObjectInputStream(new FileInputStream(file)).readObject();
-	} catch (Exception e) {
-	    e.printStackTrace();
-	}
-	return null;
+        return index.get(token);
     }
 
 
@@ -115,209 +68,163 @@ public class HashedIndex implements Index {
      *  Searches the index for postings matching the query.
      */
     public PostingsList search( Query query, int queryType, int rankingType, int structureType ) {
-	if (query.terms.size() < 1)
-	    return null;
-
-	if (query.terms.size() == 1)
-	    return getPostings(query.terms.get(0));
-
-
-	return intersect(query.terms, queryType);
+        if (queryType == Index.RANKED_QUERY)
+            return rankedRetrieval(query.terms);
+        return intersect(query.terms, queryType);
     }
 
-    private PostingsList intersect(LinkedList<String> terms, int queryType) {
-	// Don't sort by frequency if we are doing a phrase query because then
-	// the order of the terms matter.
-	if (queryType != Index.PHRASE_QUERY)
-	    sortByIncreasingFrequency(terms);
-
-	PostingsList result = getPostings(terms.getFirst());
-	if (result == null)
-	    return null;
-
-	terms.remove();
-
-	while (terms.size() > 0 && result != null) {
-	    if (queryType == Index.PHRASE_QUERY) {
-		result = positionalIntersect(result, getPostings(terms.getFirst()), 1);
-	    } else {
-		result = intersect(result, getPostings(terms.getFirst()));
-	    }
-	    terms.remove();
-	}
-	// }
-	return result;
+    public PostingsList rankedRetrieval(LinkedList<String> terms) {
+        PostingsList ranked = cosineScore(terms);
+        ranked.sort();
+        // PostingsList result = new PostingsList();
+        // for (int i = 0; i < 10; i++) {
+        //     result.add(ranked.get(i));
+        // }
+        return ranked;
     }
 
-    private PostingsList intersect(PostingsList l1, PostingsList l2) {
-	if (l1 == null || l2 == null) 
-	    return null;
-	PostingsList answer = new PostingsList();
+    public PostingsList cosineScore(LinkedList<String> terms) {
+        PostingsList ret = new PostingsList();
 
-	for (int i = 0, j = 0; i < l1.size() && j < l2.size(); ++i, ++j) {
-	    PostingsEntry p1 = l1.get(i);
-	    PostingsEntry p2 = l2.get(j);
-
-	    if (p1.docID == p2.docID) {
-		answer.add(p1.docID);
-	    } else if (p1.docID < p2.docID) {
-		--j;
-	    } else {
-		--i;
-	    }
-	}
-
-	if (answer.size() == 0)
-	    return null;
-
-	return answer;
+        for (String t : terms) {
+            PostingsList termList = index.get(t);
+            int n = terms.size();
+            int tf = 1;
+            double idf = termList.idf(); 
+            double tf_idfQuery = tf * idf / n; // n CORRECT=====?????
+            for (int k = 0; k < termList.size(); k++) {
+                PostingsEntry pe = termList.get(k);
+                int d = pe.docID;
+                // Num occ in doc * inv num docs that occ / doc len
+                double tf_idfDoc = pe.tf() * termList.idf() / docLengths.get("" + d);
+                pe.score += tf_idfDoc * tf_idfQuery;
+                ret.add(pe);
+            }
+        }
+        return ret;
     }
 
-    private void sortByIncreasingFrequency(LinkedList<String> terms) {
-	Collections.sort(terms, new Comparator<String>() {
-	    public int compare(String t1, String t2) {
-		PostingsList t1Postings = getPostings(t1);
-		PostingsList t2Postings = getPostings(t2);
+    public PostingsList intersect(PostingsList list1, PostingsList list2) {
+        PostingsList result = new PostingsList();
 
-		int t1Freq = 0;
-		int t2Freq = 0;
+        // list1.printList();
+        // list2.printList();
+        int i = 0;
+        int j = 0;
+        while (i < list1.size() && j < list2.size()) {
+            PostingsEntry p1 = list1.get(i);
+            PostingsEntry p2 = list2.get(j);
 
-		if (t1Postings != null)
-		    t1Freq = t1Postings.size();
-		if (t2Postings != null)
-		    t2Freq = t2Postings.size();
-
-		return Integer.compare(t1Freq, t2Freq);
-	    }
-	});
+            if (p1.docID == p2.docID) {
+                result.add(p1.docID);
+                i++;
+                j++;
+            } else if (p1.docID < p2.docID) {
+                i++;
+            } else {
+                j++;
+            }
+        }
+        return result;
     }
 
-    private PostingsList positionalIntersect(PostingsList l1, PostingsList l2, int k) {
-	if (l1 == null || l2 == null) 
-	    return null;
-	PostingsList answer = new PostingsList();
-
-	for (int i = 0, j = 0; i < l1.size() && j < l2.size(); ++i, ++j) {
-	    PostingsEntry p1, p2;
-	    p1 = l1.get(i);
-	    p2 = l2.get(j);
-	    if (p1.docID == p2.docID) {
-		List<Integer> ppl1 = p1.positions;
-		List<Integer> ppl2 = p2.positions;
-		List<Integer> l = new ArrayList<Integer>();
-		
-		int currentPosition1, currentPosition2;
-		currentPosition1 = currentPosition2 = 0;
-		for (int x = 0; x < ppl1.size(); ++x) {
-		    for (int y = 0; y < ppl2.size(); ++y) {
-			currentPosition1 = ppl1.get(x);
-			currentPosition2 = ppl2.get(y);
-			if (currentPosition2 - currentPosition1 == k) {
-			    l.add(currentPosition2);
-			    // if (!answer.contains(p1.docID))
-				// answer.add(p1.docID);
-			} else if (currentPosition2 > currentPosition1) {
-			    break;
-			}
-			while (!l.isEmpty() && Math.abs(l.get(0) - currentPosition1) > k)
-			    l.remove(0);
-			for (int ps : l)  {
-			    answer.add(p1.docID, ps);
-			}
-		    }
-		}
-	    } else if (p1.docID < p2.docID) {
-		--j;
-	    } else {
-		--i;
-	    }
-	}
-	return answer;
+    public PostingsList intersect(LinkedList<String> terms, int queryType) {
+        if (queryType == Index.INTERSECTION_QUERY)
+            frequencySort(terms);	
+        PostingsList result = getPostings(terms.getFirst());
+        terms.remove();
+        while (!terms.isEmpty() && result.size() > 0) {
+            if (queryType == Index.INTERSECTION_QUERY)
+                result = intersect(result, getPostings(terms.getFirst()));
+            else if (queryType == Index.PHRASE_QUERY)
+                result = positionalIntersect(result, getPostings(terms.getFirst()));
+            terms.remove();
+        }
+        return result;	
     }
+
+    public void frequencySort(LinkedList<String> terms) {
+        Collections.sort(terms, new CompareStrings());
+    }
+
+    public class CompareStrings implements Comparator<String> {
+        @Override
+            public int compare(String s1, String s2) {
+                PostingsList pl1 = getPostings(s1);
+                PostingsList pl2 = getPostings(s2);
+
+                int size1 = 0;
+                int size2 = 0;
+
+                if (pl1 != null) {
+                    size1 = pl1.size();	
+                }
+                if (pl2 != null) {
+                    size2 = pl2.size();	
+                }
+
+                return Integer.compare(size1, size2);
+            }
+    }
+    // 1.3
+    public PostingsList positionalIntersect(PostingsList list1, PostingsList list2) {
+        PostingsList answer = new PostingsList();
+        int i = 0;
+        int j = 0;
+        int entry1currentOffset = 0;
+        int entry2currentOffset = 0;
+        while (i < list1.size() && j < list2.size()) {
+            PostingsEntry p1 = list1.get(i);
+            PostingsEntry p2 = list2.get(j);
+
+            // If the documents are the same
+            if (p1.docID == p2.docID) {
+                List<Integer> l = new LinkedList<Integer>();
+                
+                // Find offsets of the words in the document 
+                ArrayList<Integer> entry1offsets = p1.positions;
+                ArrayList<Integer> entry2offsets = p2.positions;
+
+                // The second word has to come after the first word
+                for (int k = 0; k < entry1offsets.size(); k++) {
+                    entry1currentOffset = entry1offsets.get(k);
+                    for (int m = 0; m < entry2offsets.size(); m++) {
+                        entry2currentOffset = entry2offsets.get(m);
+
+                        // If the second word is right after the first word, we found a match
+                        if (entry2currentOffset - entry1currentOffset == 1) {
+                            //answer.add(p1.docID);
+                            l.add(entry2currentOffset);
+                        } else if (entry2currentOffset > entry1currentOffset) {
+                            // If we get here, we have either just added an answer
+                            // or we havent, but either way the list2 pointer has
+                            // gone one step too far, so list1 pointer needs to be incremented.
+                            break;
+                        }
+                        while (!l.isEmpty() && Math.abs(l.get(0) - entry1currentOffset) > 1)
+                            l.remove(0);
+                        for (int ps : l) {
+                            answer.add(p1.docID, ps);
+                        }
+                    }
+                }
+                i++;
+                j++;
+            } else if (p1.docID < p2.docID) {
+                i++;
+            } else
+                j++;
+        }
+        return answer;
+    }
+
+    public void writeFilePaths() {}
+    public void getFilePaths() {}
+    public void writeIndexToDisk() {}
 
     /**
-     *  No need for cleanup in a HashedIndex.
+     *  no need for cleanup in a hashedindex.
      */
     public void cleanup() {
-    }
-
-    private void printFileAndID(int docID) {
-	System.out.printf("ID: %d | %s\n",  docID, docIDs.get("" + docID));
-    }
-
-    public void writeBlockToDisk() {
-	System.out.println("Writing to disk");
-	try {
-	    File file = new File(indexPath + "docIDs");
-	    if (file.exists()) {
-		FileInputStream fis = new FileInputStream(file);
-		ObjectInputStream ois = new ObjectInputStream(fis);
-		HashMap<String, String> oldIDs = (HashMap<String, String>) ois.readObject();
-		oldIDs.putAll(docIDs);
-		docIDs.clear();
-		docIDs.putAll(oldIDs);
-	    }
-	    FileOutputStream fos = new FileOutputStream(file);
-	    ObjectOutputStream oos = new ObjectOutputStream(fos);
-	    oos.writeObject(docIDs);
-	    oos.close();
-	    fos.close();
-	    docIDs.clear();
-	} catch (Exception e) {
-	    e.printStackTrace();
-	}
-
-	for (Map.Entry<String, PostingsList> e : index.entrySet()) {
-	    try {
-		File file = new File(indexPath + e.getKey());
-
-		// If file doesn't exist, just create it and add postings list.
-		if (!file.exists()) {
-		    FileOutputStream fos = new FileOutputStream(file);
-		    ObjectOutputStream oos = new ObjectOutputStream(fos);
-		    oos.writeObject(e.getValue());
-		    oos.close();
-		    fos.close();
-		    continue;
-		}
-
-		FileInputStream fis = new FileInputStream(file);
-		ObjectInputStream ois = new ObjectInputStream(fis);
-		PostingsList oldList1 = (PostingsList) ois.readObject();
-		ois.close();
-		fis.close();
-
-		PostingsList oldList2 = e.getValue();
-
-		PostingsList pl = new PostingsList();
-		pl.addAll(oldList1);
-		pl.addAll(oldList2);
-
-		FileOutputStream fos = new FileOutputStream(file);
-		ObjectOutputStream oos = new ObjectOutputStream(fos);
-		oos.writeObject(pl);
-		oos.close();
-		fos.close();
-	    } catch (Exception exception) {
-		exception.printStackTrace();
-	    }
-	}
-	index = new HashMap<String,PostingsList>();
-    }
-
-    public void loadDocIDs() {
-	try {
-	    File file = new File(indexPath + "docIDs");
-	    if (file.exists()) {
-		FileInputStream fis = new FileInputStream(file);
-		ObjectInputStream ois = new ObjectInputStream(fis);
-		HashMap<String, String> oldIDs = (HashMap<String, String>) ois.readObject();
-		docIDs.putAll(oldIDs);
-		ois.close();
-		fis.close();
-	    }
-	} catch (Exception e) {
-	    e.printStackTrace();
-	}
     }
 }

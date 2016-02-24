@@ -22,6 +22,14 @@ public class PostingsEntry implements Comparable<PostingsEntry>, Serializable {
 	this.docID = docID;
     }
 
+    public PostingsEntry(int docID, int offset) {
+      this.docID = docID;
+      positions.add(offset);
+    }
+
+    public int tf() {
+      return positions.size();
+    }
     /**
      *  PostingsEntries are compared by their score (only relevant 
      *  in ranked retrieval).
