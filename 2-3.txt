@@ -21,6 +21,9 @@
 1 Graduate_Groups.f 2
 1 Computer_Science.f 3
 1 ECE_Course_Reviews.f 2
+
+2164 results 
+
 1 Math.f 3
 1 TravisTaylor.f 1
 1 Davis_Graduate.f 0
@@ -72,3 +75,18 @@
 1 Journal_of_Mathematical_Physics.f 2
 1 Agricultural_%26_Environmental_Chemistry_Graduate_Group.f 1
 1 ThucNghiNguyen.f 1
+
+Svåra fall: 
+Sätter man 0 eller 1 på Elaine och Evelyn?
+Vad räknas som matematikprogram? Biologi?
+
+Mest ettor på allt nytt. Math först är bra men annars blev det mest
+personer som gått matteprogram. Jag borde nog nolla fler eftersom precision är
+ganska konstant.
+
+Mest
+
+17 relevant
+23 totalt
+Precision = 17/23
+Recall = 17/100

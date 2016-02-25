@@ -24,7 +24,7 @@ public class PostingsList implements Serializable {
     /** The postings list as a linked list. */
     private ArrayList<PostingsEntry> list = new ArrayList<PostingsEntry>();
     private HashSet<Integer> docIDs = new HashSet<Integer>();
-    private final int N = 17486;
+    private final int N = 17486; // Number of documents in collection.
 
     public PostingsList() {
     }

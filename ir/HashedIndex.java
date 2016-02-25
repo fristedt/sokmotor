@@ -27,7 +27,7 @@ public class HashedIndex implements Index {
 
     /** The index as a hashtable. */
     private HashMap<String,PostingsList> index = new HashMap<String,PostingsList>();
-    private final int N = 17486;
+    private final int N = 17486; // Number of documents in collection.
 
     /**
      *  Inserts this token in the index.
@@ -76,10 +76,6 @@ public class HashedIndex implements Index {
     public PostingsList rankedRetrieval(LinkedList<String> terms) {
         PostingsList ranked = cosineScore(terms);
         ranked.sort();
-        // PostingsList result = new PostingsList();
-        // for (int i = 0; i < 10; i++) {
-        //     result.add(ranked.get(i));
-        // }
         return ranked;
     }
 
@@ -88,16 +84,19 @@ public class HashedIndex implements Index {
 
         for (String t : terms) {
             PostingsList termList = index.get(t);
+	    // Just continue if word doesn't exist.
+	    if (termList == null)
+		continue;
             int n = terms.size();
-            int tf = 1;
+            int tf = 1; // assume all query terms are unique.
             double idf = termList.idf(); 
-            double tf_idfQuery = tf * idf / n; // n CORRECT=====?????
+            double tf_idfQuery = tf * idf / n; 
             for (int k = 0; k < termList.size(); k++) {
                 PostingsEntry pe = termList.get(k);
                 int d = pe.docID;
-                // Num occ in doc * inv num docs that occ / doc len
+                // Num occurances in doc * inv num docs that occ / doc len
                 double tf_idfDoc = pe.tf() * termList.idf() / docLengths.get("" + d);
-                pe.score += tf_idfDoc * tf_idfQuery;
+                pe.score = tf_idfDoc * tf_idfQuery;
                 ret.add(pe);
             }
         }
@@ -107,8 +106,6 @@ public class HashedIndex implements Index {
     public PostingsList intersect(PostingsList list1, PostingsList list2) {
         PostingsList result = new PostingsList();
 
-        // list1.printList();
-        // list2.printList();
         int i = 0;
         int j = 0;
         while (i < list1.size() && j < list2.size()) {
