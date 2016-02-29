@@ -156,6 +156,7 @@ public class PageRank{
 
     /* --------------------------------------------- */
 
+    // Method 1
     double[] endpointRandomStart(int n, int N) {
 	double[] pagerank = new double[n];
 
@@ -171,6 +172,7 @@ public class PageRank{
 	// printTop(pagerank, 50);
     }
 
+    // Method 2
     double[] endpointCyclicStart(int n, int m) {
 	int N = n * m;
 	double[] pagerank = new double[n];
@@ -188,7 +190,65 @@ public class PageRank{
 	return pagerank;
     }
 
-    void completePath(int n) {
+    // Method 3
+    double[] completePath(int n, int m, int T) {
+	int N = n * m;
+	double[] pagerank = new double[n];
+
+	for (int i = 0; i < n; ++i) {
+	    for (int j = 0; j < m; ++j) {
+		completeWalk(i, n, pagerank, 1, T, false);
+	    }
+	}
+
+	for (int i = 0; i < n; ++i) {
+	    pagerank[i] /= (N * T);
+	}
+
+	return pagerank;
+    }
+
+    // Method 4
+    double[] completePathDangling(int n, int m, int T) {
+	int N = n * m;
+	double[] pagerank = new double[n];
+
+	for (int i = 0; i < n; ++i) {
+	    for (int j = 0; j < m; ++j) {
+		completeWalk(i, n, pagerank, 1, T, true);
+	    }
+	}
+
+	double numberOfVisits = 0;
+	for (int i = 0; i < n; ++i) {
+	    numberOfVisits += pagerank[i];
+	}
+
+	for (int i = 0; i < n; ++i) {
+	    pagerank[i] /= numberOfVisits;
+	}
+
+	return pagerank;
+    }
+
+    // Method 5
+    double[] completePathRandomStart(int n, int N, int T) {
+	double[] pagerank = new double[n];
+
+	for (int i = 0; i < N; ++i) {
+	    completeWalk(randomPage(n), n, pagerank, 1, T, true);
+	}
+
+	double numberOfVisits = 0;
+	for (int i = 0; i < n; ++i) {
+	    numberOfVisits += pagerank[i];
+	}
+
+	for (int i = 0; i < n; ++i) {
+	    pagerank[i] /= numberOfVisits;
+	}
+
+	return pagerank;
     }
 
     int walk(int page, int n) {
@@ -204,8 +264,26 @@ public class PageRank{
 	return walk(randomPageFrom(page), n);
     }
 
-    void walk(int page, int t, int T, int[] visits) {
+    void completeWalk(int page, int n, double[] pagerank, int t, int T, boolean dangling) {
+	pagerank[page] += 1;
 
+	if (t >= T)
+	    return;
+
+	double x = random.nextDouble();
+
+	if (x <= BORED) {
+	    completeWalk(randomPage(n), n, pagerank, t+1, T, dangling);
+	    return;
+	}
+
+	if (out[page] == 0) {
+	    if (!dangling)
+		completeWalk(randomPage(n), n, pagerank, t+1, T, dangling);
+	    return;
+	}
+
+	completeWalk(randomPageFrom(page), n, pagerank, t+1, T, dangling);
     }
 
     int randomPage(int n) {
@@ -230,12 +308,15 @@ public class PageRank{
     void computePagerank( int numberOfDocs ) {
 	try {
 	    double[] exactPagerank = readFromDisk(numberOfDocs);
-	    // int[] sizesOfN = new int[] {100, 1000, 10000, 100000, 1000000, 10000000, 100000000};
-	    int[] sizesOfN = new int[] {10, 20, 50, 100, 500, 1000};
+	    int[] sizesOfN = new int[] {100, 1000, 10000, 100000, 1000000, 10000000, 100000000};
+	    // int[] sizesOfM = new int[] {1, 2, 3, 4, 5};
 	    double lastD = 0;
 	    for (int N : sizesOfN) {
-		double[] approx = endpointCyclicStart(numberOfDocs, N);
+	    // for (int m : sizesOfM) {
+		// double[] approx = endpointCyclicStart(numberOfDocs, N);
 		// double[] approx = endpointRandomStart(numberOfDocs, N);
+		// double[] approx = completePath(numberOfDocs, m, 100);
+		double[] approx = completePathRandomStart(numberOfDocs, N, 100);
 		printTop(approx, 10);
 		double d = getTopSquareDiffs(exactPagerank, approx, 50);
 		System.out.printf("%10d: %e %e\n", N, d, Math.abs(lastD - d));
