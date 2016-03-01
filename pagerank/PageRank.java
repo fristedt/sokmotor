@@ -259,7 +259,7 @@ public class PageRank{
 
 	// No outlinks, terminate.
 	if (out[page] == 0) 
-	    return randomPage(n);
+	    return walk(randomPage(n), n);
 
 	return walk(randomPageFrom(page), n);
     }
@@ -292,14 +292,8 @@ public class PageRank{
 
     int randomPageFrom(int from) {
 	int x = random.nextInt(out[from]);
-	int i = 0;
-	for (Integer to : link.get(from).keySet()) {
-	    if (i == x)
-		return to;
-	    i += 1;
-	}
-	// Should never be reached.
-	return -1;
+	Set<Integer> keys = link.get(from).keySet();
+	return keys.toArray(new Integer[keys.size()])[x];
     }
 
     /*
@@ -308,19 +302,33 @@ public class PageRank{
     void computePagerank( int numberOfDocs ) {
 	try {
 	    double[] exactPagerank = readFromDisk(numberOfDocs);
-	    int[] sizesOfN = new int[] {100, 1000, 10000, 100000, 1000000, 10000000, 100000000};
-	    // int[] sizesOfM = new int[] {1, 2, 3, 4, 5};
+	    // int[] sizesOfN = new int[] {100, 1000, 10000, 100000, 1000000, 10000000, 100000000};
+	    int[] sizesOfN = new int[] {numberOfDocs * 1000};
+	    // int[] sizesOfM = new int[] {1, 2, 3, 4, 5, 100, 1000};
+	    int[] sizesOfM = new int[] {5};
 	    double lastD = 0;
-	    for (int N : sizesOfN) {
-	    // for (int m : sizesOfM) {
-		// double[] approx = endpointCyclicStart(numberOfDocs, N);
-		// double[] approx = endpointRandomStart(numberOfDocs, N);
-		// double[] approx = completePath(numberOfDocs, m, 100);
-		double[] approx = completePathRandomStart(numberOfDocs, N, 100);
-		printTop(approx, 10);
-		double d = getTopSquareDiffs(exactPagerank, approx, 50);
-		System.out.printf("%10d: %e %e\n", N, d, Math.abs(lastD - d));
-		lastD = d;
+
+	    int upper = numberOfDocs;
+	    int step = 50;
+	    // System.out.println("#steps: " + ((numberOfDocs * upper) / step));
+	    // for (int i = step; i < upper; i += step) {
+		// double[] approx1 = endpointRandomStart(numberOfDocs, i);
+		// System.out.printf(Locale.US, "%d, %e, %e\n", i, getTopSquareDiffs(exactPagerank, approx1, numberOfDocs - 50, numberOfDocs), getTopSquareDiffs(exactPagerank, approx1, 50));
+	    // }
+	    // System.out.printf("X2 = [");
+	    int mStep = 1;
+	    int mUpper = 10;
+	    // for (int i = mStep; i < mUpper; i += mStep) {
+		// double[] approx1 = endpointCyclicStart(numberOfDocs, i);
+		// System.out.printf(Locale.US, "%d, %e, %e\n", i * numberOfDocs, getTopSquareDiffs(exactPagerank, approx1, numberOfDocs - 50, numberOfDocs), getTopSquareDiffs(exactPagerank, approx1, 50));
+	    // }
+	    int tStep = 10;
+	    int tUpper = 100;
+	    int t = 100;
+	    // for (int i = mStep; i < mUpper; i += mStep) {
+	    for (int i = step; i < upper; i += step) {
+		double[] approx1 = completePathRandomStart(numberOfDocs, i, t);
+		System.out.printf(Locale.US, "%d, %e, %e\n", i * t, getTopSquareDiffs(exactPagerank, approx1, numberOfDocs - 50, numberOfDocs), getTopSquareDiffs(exactPagerank, approx1, 50));
 	    }
 	} catch (Exception e) {
 	    e.printStackTrace();
@@ -411,7 +419,11 @@ public class PageRank{
 	return pagerank;
     }
 
-    private void printTop(double[] pageRank, int top) {
+    private void printTop(double[] pagerank, int top) {
+	printTop(pagerank, 0, top);
+    }
+
+    private void printTop(double[] pageRank, int bot, int top) {
         List<ValueAndIndex> list = new LinkedList<ValueAndIndex>();
         for (int i = 0; i < pageRank.length; i++) {
             ValueAndIndex d = new ValueAndIndex(pageRank[i], docName[i]);
@@ -420,13 +432,17 @@ public class PageRank{
 
         Collections.sort(list);
 
-        for (int i = 0; i < top && i < pageRank.length; i++) {
+        for (int i = bot; i < top && i < pageRank.length; i++) {
             ValueAndIndex d = list.get(i);
             System.out.printf("%d: %s %f\n", i, d.docName, d.score);
         }
     }
 
     private double getTopSquareDiffs(double[] exact, double[] approx, int top) {
+	return getTopSquareDiffs(exact, approx, 0, top);
+    }
+
+    private double getTopSquareDiffs(double[] exact, double[] approx, int bot, int top) {
         List<ValueAndIndex> list = new LinkedList<ValueAndIndex>();
         for (int i = 0; i < exact.length; i++) {
             ValueAndIndex d = new ValueAndIndex(exact[i], docName[i]);
@@ -436,7 +452,7 @@ public class PageRank{
         Collections.sort(list);
 
 	double sum = 0;
-        for (int i = 0; i < top && i < exact.length; i++) {
+        for (int i = bot; i < top && i < exact.length; i++) {
             ValueAndIndex d = list.get(i);
             sum += Math.pow(d.score - approx[docNumber.get(d.docName)], 2);
         }
