@@ -4,6 +4,7 @@
  * 
  *   First version:  Johan Boye, 2012
  */  
+package pagerank;
 
 import java.util.*;
 import java.io.*;
@@ -21,6 +22,11 @@ public class PageRank{
      *   Mapping from document names to document numbers.
      */
     Hashtable<String,Integer> docNumber = new Hashtable<String,Integer>();
+   
+    // Filename to document name
+    HashMap<String, String> filenames = new HashMap<String, String>();
+
+    double[] pageranks;
 
     /**
      *   Mapping from document numbers to document names
@@ -68,11 +74,21 @@ public class PageRank{
      */
     final static int MAX_NUMBER_OF_ITERATIONS = 1000;
 
-    final static String PAGERANK_FILENAME = "pagerank.txt";
-
+    final static String PAGERANK_FILENAME = "pagerank/pagerank.txt";
     
     /* --------------------------------------------- */
 
+    // Constructor used by HashedIndex.
+    public PageRank() {
+	int noOfDocs = readDocs( "pagerank/linksDavis.txt" );
+	try {
+	    pageranks = readFromDisk(noOfDocs);
+	    buildFilenames();
+	    System.out.println("Got them pageranks here yo");
+	} catch (Exception e) {
+	    e.printStackTrace();
+	}
+    }
 
     public PageRank( String filename ) {
 	int noOfDocs = readDocs( filename );
@@ -81,7 +97,6 @@ public class PageRank{
 
 
     /* --------------------------------------------- */
-
 
     /**
      *   Reads the documents and creates the docs table. When this method 
@@ -334,6 +349,30 @@ public class PageRank{
 	    e.printStackTrace();
 	}
     }
+
+    public double getPageRank(String filepath) {
+	String filename = filepath.substring(filepath.lastIndexOf("/") + 1, filepath.length() - 2);
+	System.out.println(filename);
+	String documentName = filenames.get(filename); 
+	if (documentName == null) {
+	    System.out.println("NULL NAME");
+	    return -1;
+	}
+
+	int docN = docNumber.get(documentName);
+	return pageranks[docN];
+    }
+
+    private void buildFilenames() throws FileNotFoundException, IOException {
+	String articleTitlesPath = "pagerank/articleTitles.txt";
+	BufferedReader reader = new BufferedReader(new FileReader(articleTitlesPath));
+	String line;
+	while ((line = reader.readLine()) != null) {
+	    String[] split = line.split(";");
+	    filenames.put(split[1], split[0]);
+	}
+    }
+
 
     private void exactPagerank(int numberOfDocs) {
 	double[] x = new double[numberOfDocs];

@@ -84,6 +84,9 @@ Mest ettor på allt nytt. Math först är bra men annars blev det mest
 personer som gått matteprogram. Jag borde nog nolla fler eftersom precision är
 ganska konstant.
 
+Precision borde gå ner med ranked retrevial multi word, eftersom vi kör union.
+Recall ingen skillnad eftersom vi delar med konstant?
+
 Mest
 
 17 relevant

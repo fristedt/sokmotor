@@ -28,6 +28,7 @@ public class HashedIndex implements Index {
     /** The index as a hashtable. */
     private HashMap<String,PostingsList> index = new HashMap<String,PostingsList>();
     private final int N = 17486; // Number of documents in collection.
+    private final pagerank.PageRank pagerank = new pagerank.PageRank();
 
     /**
      *  Inserts this token in the index.
@@ -69,14 +70,27 @@ public class HashedIndex implements Index {
      */
     public PostingsList search( Query query, int queryType, int rankingType, int structureType ) {
         if (queryType == Index.RANKED_QUERY)
-            return rankedRetrieval(query.terms);
+            return rankedRetrieval(query.terms, rankingType);
         return intersect(query.terms, queryType);
     }
 
-    public PostingsList rankedRetrieval(LinkedList<String> terms) {
-        PostingsList ranked = cosineScore(terms);
-        ranked.sort();
-        return ranked;
+    public PostingsList rankedRetrieval(LinkedList<String> terms, int rankingType) {
+	PostingsList ranked = null;
+	switch (rankingType) {
+	    case Index.TF_IDF:
+		ranked = cosineScore(terms);
+		ranked.sort();
+		return ranked;
+	    case Index.PAGERANK:
+		ranked = pageranks(terms);
+		ranked.sort();
+		break;
+	    case Index.COMBINATION:
+		ranked = combination(terms);
+		ranked.sort();
+		break;
+	}
+	return ranked;
     }
 
     public PostingsList cosineScore(LinkedList<String> terms) {
@@ -97,6 +111,53 @@ public class HashedIndex implements Index {
                 // Num occurances in doc * inv num docs that occ / doc len
                 double tf_idfDoc = pe.tf() * termList.idf() / docLengths.get("" + d);
                 pe.score = tf_idfDoc * tf_idfQuery;
+                ret.add(pe);
+            }
+        }
+        return ret;
+    }
+
+    private PostingsList pageranks(LinkedList<String> terms) {
+        PostingsList ret = new PostingsList();
+
+        for (String t : terms) {
+            PostingsList termList = index.get(t);
+	    // Just continue if word doesn't exist.
+	    if (termList == null)
+		continue;
+            for (int k = 0; k < termList.size(); k++) {
+                PostingsEntry pe = termList.get(k);
+                pe.score = pagerank(pe.docID);
+                ret.add(pe);
+            }
+        }
+        return ret;
+    }
+
+    private double pagerank(int docID) {
+	String filename = docIDs.get(""+docID);
+	return pagerank.getPageRank(filename);
+    }
+
+    public PostingsList combination(LinkedList<String> terms) {
+        PostingsList ret = new PostingsList();
+
+        for (String t : terms) {
+            PostingsList termList = index.get(t);
+	    if (termList == null)
+		continue;
+            int n = terms.size();
+            int tf = 1;
+            double idf = termList.idf(); 
+            double tf_idfQuery = tf * idf / n; 
+            for (int k = 0; k < termList.size(); k++) {
+                PostingsEntry pe = termList.get(k);
+                int d = pe.docID;
+                double tf_idfDoc = pe.tf() * termList.idf() / docLengths.get("" + d);
+		double cosine = tf_idfDoc * tf_idfQuery;
+		double pagerank = pagerank(pe.docID);
+		double alpha = 0.00005;
+		pe.score = alpha * cosine + (1 - alpha) * pagerank;
                 ret.add(pe);
             }
         }
