@@ -1,4 +1,4 @@
-/*  
+/*
  *   This file is part of the computer assignment for the
  *   Information Retrieval course at KTH.
  * 
@@ -312,11 +312,11 @@ public class PageRank{
     }
 
     /*
-     *   Computes the pagerank of each document.
-     */
+     *   Computes the pagerank of each document.  */
     void computePagerank( int numberOfDocs ) {
 	try {
 	    double[] exactPagerank = readFromDisk(numberOfDocs);
+	    printTop(exactPagerank, 50);
 	    // int[] sizesOfN = new int[] {100, 1000, 10000, 100000, 1000000, 10000000, 100000000};
 	    int[] sizesOfN = new int[] {numberOfDocs * 1000};
 	    // int[] sizesOfM = new int[] {1, 2, 3, 4, 5, 100, 1000};

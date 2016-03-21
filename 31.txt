@@ -1,0 +1,19 @@
+Alpha 1, beta 1
+zombie attack
+Valde zombies reclaim the streets och zombie walk. Båda åkte upp till toppen. Allt annat är typ helt orelaterat.
+
+money transfer
+Valde transfer student association och services, åkte upp till plats 1 och 2 (nollindexerat). Verkar inte finnas något relevant med både money och transfer.
+
+Computer science program
+Valde Computer Science and Engineering, samt ECS. Båda var redan topp, och de behöll deras platser även efter "New search".
+
+Alpha 1, beta 0.5
+zombie attack
+Minskade score på irrelevanta resultat, men inte tillräckligt för att göra skillnad. Tror att det finns för få relevanta resultat för dessa sökquerys.
+
+Why    is    the    search    after    feedback    slower?
+Eftersom vi får betydligt fler ord i vår query.
+
+Why    is    the    number    of    returned    documents    larger?
+Eftersom vi får betydligt fler ord i vår query.

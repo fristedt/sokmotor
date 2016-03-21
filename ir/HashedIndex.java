@@ -24,7 +24,6 @@ import java.util.Collections;
  *   Implements an inverted index as a Hashtable from words to PostingsLists.
  */
 public class HashedIndex implements Index {
-
     /** The index as a hashtable. */
     private HashMap<String,PostingsList> index = new HashMap<String,PostingsList>();
     private final int N = 17486; // Number of documents in collection.
@@ -34,6 +33,14 @@ public class HashedIndex implements Index {
      *  Inserts this token in the index.
      */
     public void insert( String token, int docID, int offset ) {
+	if (documentVectors.get(docID) == null)
+	    documentVectors.put(docID, new HashMap<String, Integer>());
+	if (!documentVectors.get(docID).containsKey(token)) {
+	    documentVectors.get(docID).put(token, 1);
+	} else {
+	    documentVectors.get(docID).put(token, documentVectors.get(docID).get(token) + 1);
+	}
+
         if (!("".equals(token))) {
             PostingsList pl = index.get(token);
 

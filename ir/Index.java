@@ -32,6 +32,8 @@ public interface Index {
     public static final int BIGRAM = 1; 
     public static final int SUBPHRASE = 2; 
 	
+    public HashMap<Integer, HashMap<String, Integer>> documentVectors = new HashMap<Integer, HashMap<String, Integer>>();
+
     public HashMap<String, String> docIDs = new HashMap<String,String>();
     public HashMap<String,Integer> docLengths = new HashMap<String,Integer>();
 
