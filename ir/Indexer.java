@@ -58,7 +58,8 @@ public class Indexer {
      *  Initializes the index as a HashedIndex.
      */
     public Indexer() {
-	index = new HashedIndex();
+	// index = new HashedIndex();
+	index = new BiwordIndex();
     }
 
 
