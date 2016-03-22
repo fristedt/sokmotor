@@ -13,8 +13,8 @@ import java.util.LinkedList;
 import java.util.StringTokenizer;
 
 public class Query {
-    private static final double alpha = 1;
-    private static final double beta = 0.8;
+    private static final double alpha = 0.8;
+    private static final double beta = 2;
     
     public LinkedList<String> terms = new LinkedList<String>();
     public LinkedList<Double> weights = new LinkedList<Double>();
@@ -55,13 +55,12 @@ public class Query {
     
     /**
      *  Expands the Query using Relevance Feedback
+     *  Both query vector and document vector use term frequency as weight.
      */
     public void relevanceFeedback( PostingsList results, boolean[] docIsRelevant, Indexer indexer ) {
 	// results contain the ranked list from the current search
 	// docIsRelevant contains the users feedback on which of the 10 first hits are relevant
 	
-	// Both query vector and document vector use term frequency as weight.
-
 	// Query vector
 	HashMap<String, Double> queryVector = new HashMap<String, Double>();
 	double weightsSum = 0;

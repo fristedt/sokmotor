@@ -77,50 +77,60 @@ public class HashedIndex implements Index {
      */
     public PostingsList search( Query query, int queryType, int rankingType, int structureType ) {
         if (queryType == Index.RANKED_QUERY)
-            return rankedRetrieval(query.terms, rankingType);
+            return rankedRetrieval(query, rankingType);
         return intersect(query.terms, queryType);
     }
 
-    public PostingsList rankedRetrieval(LinkedList<String> terms, int rankingType) {
+    public PostingsList rankedRetrieval(Query query, int rankingType) {
 	PostingsList ranked = null;
 	switch (rankingType) {
 	    case Index.TF_IDF:
-		ranked = cosineScore(terms);
+		ranked = cosineScore(query);
 		ranked.sort();
 		return ranked;
 	    case Index.PAGERANK:
-		ranked = pageranks(terms);
+		ranked = pageranks(query.terms);
 		ranked.sort();
 		break;
 	    case Index.COMBINATION:
-		ranked = combination(terms);
+		ranked = combination(query.terms);
 		ranked.sort();
 		break;
 	}
 	return ranked;
     }
 
-    public PostingsList cosineScore(LinkedList<String> terms) {
+    public PostingsList cosineScore(Query query) {
+	long startTime = System.nanoTime();
+
         PostingsList ret = new PostingsList();
 
-        for (String t : terms) {
+	int n = query.terms.size();
+	for (int i = 0; i < query.terms.size(); ++i) {
+	    String t = query.terms.get(i);
             PostingsList termList = index.get(t);
 	    // Just continue if word doesn't exist.
 	    if (termList == null)
 		continue;
-            int n = terms.size();
             int tf = 1; // assume all query terms are unique.
+	    double termWeight = query.weights.get(i);
+	    // double tf = query.weights.get(i); // tf 
             double idf = termList.idf(); 
-            double tf_idfQuery = tf * idf / n; 
+	    System.out.println("IDF: " + idf);
+	    if (idf < 4)
+		continue;
+            double tf_idfQuery = termWeight * tf * idf / n; 
             for (int k = 0; k < termList.size(); k++) {
                 PostingsEntry pe = termList.get(k);
                 int d = pe.docID;
                 // Num occurances in doc * inv num docs that occ / doc len
-                double tf_idfDoc = pe.tf() * termList.idf() / docLengths.get("" + d);
+                double tf_idfDoc = pe.tf() * idf / docLengths.get("" + d);
                 pe.score = tf_idfDoc * tf_idfQuery;
                 ret.add(pe);
             }
         }
+	long endTime = System.nanoTime();
+	System.out.printf("Search took %dms\n", (endTime - startTime) / 1000000);
         return ret;
     }
 
